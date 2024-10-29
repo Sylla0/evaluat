@@ -1,24 +1,26 @@
+import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
 
 export const config = {
     api: {
-        bodyParser: {
-            sizeLimit: '5mb'
-        }
+        bodyParser: false, // Next.js에서 FormData를 수신하기 위해 설정
     }
 };
 
 export default async (req, res) => {
     if (req.method === 'POST') {
-        const { file } = req.body;
-        const filePath = path.join(process.cwd(), 'uploads', file.name);
+        const form = new formidable.IncomingForm();
+        form.uploadDir = path.join(process.cwd(), '/uploads'); // 업로드 경로 설정
+        form.keepExtensions = true;
 
-        fs.writeFile(filePath, file.data, 'base64', (err) => {
+        form.parse(req, (err, fields, files) => {
             if (err) {
-                return res.status(500).json({ message: 'File upload failed' });
+                res.status(500).json({ message: 'File upload failed' });
+                return;
             }
-            res.status(200).json({ message: 'File uploaded successfully!' });
+            // 성공 시 파일 정보 응답
+            res.status(200).json({ message: 'File uploaded successfully!', files });
         });
     } else {
         res.status(405).json({ message: 'Method not allowed' });
